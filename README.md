@@ -12,6 +12,77 @@ Windows host -> VMware Workstation (bridged networking) -> FortiGate VM and Ubun
 
 The Ubuntu VM and FortiGate management interface must be on a reachable network. Bridged mode normally places both guests on the physical LAN, so restrict FortiGate administrative access to the Ubuntu VM's address and do not expose the API to the Internet.
 
+## How to access the GUIs
+
+There are two separate web interfaces. Use a normal human administrator account and MFA for the FortiGate GUI. The Ansible API token is for AWX jobs only and is never entered into either browser.
+
+### FortiGate GUI
+
+From a browser on the Windows host, or from a browser inside Ubuntu, open:
+
+```text
+https://FORTIGATE_HOST
+```
+
+Use the FortiGate human administrator username, password, and MFA. A certificate warning is expected if the trial VM uses a self-signed certificate. Do not disable FortiGate security controls to remove the warning; install a trusted lab certificate later if desired.
+
+In the FortiGate GUI, use the VDOM selector to choose `FORTIGATE_VDOM`, then verify changes under the relevant firewall address, service, and policy pages. The GUI is for human inspection and administration; Ansible uses the separate HTTPS REST API on the same management address.
+
+### AWX GUI
+
+AWX is opened at the address exposed by its supported Kubernetes deployment. The exact URL depends on whether you configure an Ingress, NodePort, or a temporary port-forward:
+
+```text
+https://AWX_HOSTNAME_OR_IP
+```
+
+From the Ubuntu VM, identify the service and any Ingress address with:
+
+```bash
+kubectl get svc -n awx
+kubectl get ingress -n awx
+kubectl get pods -n awx
+```
+
+For temporary lab-only access, port-forward the AWX web service on the Ubuntu VM. The service name may differ if your AWX custom resource has another name:
+
+```bash
+kubectl port-forward -n awx svc/awx-service 8080:80
+```
+
+Then open `http://127.0.0.1:8080` in a browser on Ubuntu. To access that temporary tunnel from the Windows browser, create an SSH tunnel from Windows to Ubuntu while the port-forward remains running:
+
+```text
+ssh -L 8080:127.0.0.1:8080 UBUNTU_USER@UBUNTU_HOST
+```
+
+Then open `http://127.0.0.1:8080` on Windows. Prefer a properly secured Ingress or restricted NodePort for regular lab use. Do not expose an unauthenticated port-forward or AWX service to the public Internet.
+
+In AWX, the normal navigation is:
+
+```text
+Organizations -> FortiGate Lab
+Inventories -> FortiGate-Lab
+Projects -> FortiGate Ansible Automation
+Templates -> select a job template -> Launch
+Jobs -> select the job -> Output
+```
+
+The AWX administrator creates these resources. An automation operator needs permission to use the project, inventory, credential, templates, and workflow without being given unnecessary administrative access.
+
+## How the complete flow works
+
+1. You log in to the FortiGate GUI with a human MFA account to inspect the lab and confirm the target VDOM.
+2. You store the API token in the AWX credential, or in local `.env` for direct Ubuntu testing. Git contains only placeholders.
+3. AWX checks out the Git project and starts the selected execution environment.
+4. Ansible reads `inventories/lab/hosts.yml` and `vars/lab.yml`. The `httpapi` connection opens HTTPS to `FORTIGATE_HOST` and sends the token to the FortiOS API for `FORTIGATE_VDOM`.
+5. The selected FortiOS module compares the requested object with the current state. It creates or updates only when needed, which produces idempotent repeated runs.
+6. The backup job stores a restricted timestamped response locally before changes. AWX job history records task results, while sensitive tasks are masked.
+7. The verification job reads the address, service, and policy facts and fails if the expected state is absent or incorrect.
+8. If a known lab verification failure requires cleanup, the operator launches rollback with explicit confirmation. It removes only the named `ANSIBLE-TEST-*` objects and policy; it does not restore arbitrary configuration.
+
+The FortiGate GUI and AWX output are complementary: use the GUI to inspect actual device state and AWX to inspect the automation task history. A successful AWX job means the API calls completed; still verify the resulting policy in the FortiGate GUI during initial lab testing.
+
 ## Prerequisites
 
 - FortiOS version recorded and checked against the selected collection release
