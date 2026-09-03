@@ -23,8 +23,17 @@
 - name: Verify expected lab objects
   ansible.builtin.assert:
     that:
-      - test_address.name in (address_facts.meta.results | map(attribute='name') | list)
-      - test_service.name in (service_facts.meta.results | map(attribute='name') | list)
-      - (policy_facts.meta.results | selectattr('policyid', 'equalto', test_policy.policyid) | list | length) == 1
-    fail_msg: "One or more expected ANSIBLE-TEST objects are absent or have an unexpected policy ID."
+      - >-
+        (address_facts.meta.results | selectattr('name', 'equalto', test_address.name)
+        | selectattr('subnet', 'equalto', verify_address_subnet) | list | length) == 1
+      - >-
+        (service_facts.meta.results | selectattr('name', 'equalto', test_service.name)
+        | selectattr('protocol', 'equalto', test_service.protocol)
+        | selectattr('tcp_portrange', 'equalto', verify_service_port) | list | length) == 1
+      - >-
+        (policy_facts.meta.results | selectattr('policyid', 'equalto', test_policy.policyid | int)
+        | selectattr('name', 'equalto', test_policy.name)
+        | selectattr('action', 'equalto', test_policy.action)
+        | selectattr('logtraffic', 'equalto', verify_policy_logtraffic) | list | length) == 1
+    fail_msg: "Expected address subnet, service port/protocol, or policy fields are absent or incorrect."
     success_msg: "Expected lab address, service, and policy are present."

@@ -8,9 +8,9 @@ Create these AWX resources:
 - Inventory: `FortiGate-Lab`, containing host `fortigate01` and no token
 - Project: `FortiGate Ansible Automation`, SCM Git, repository `<MY-GIT-REPOSITORY>`, branch `main`
 - Execution Environment: an image containing Ansible Core compatible with the selected collection and `fortinet.fortios` installed from `requirements.yml`
-- Credential: custom secret-backed credential injecting `FORTIGATE_API_TOKEN`, with host and VDOM supplied as AWX extra variables or environment-backed inventory values
+- Credential: custom secret-backed credential injecting all four `FORTIGATE_*` environment variables
 
-Prefer injecting these environment values in the AWX credential or an AWX-supported secret mechanism:
+Inject these environment values in the AWX credential or an AWX-supported secret mechanism. Extra variables do not populate `lookup('env', ...)` and must not be used for this inventory:
 
 ```text
 FORTIGATE_HOST=<lab host>
@@ -23,4 +23,4 @@ Do not put the token in extra variables, survey defaults, Git, inventory, or job
 
 ## Job execution
 
-Set the inventory, project, execution environment, and credential on each job template. Enable job history and retain logs according to lab policy. Use `--check` through the AWX job options only as an advisory dry run because network modules may not model every field.
+Set the inventory, project, execution environment, and credential on each job template. Add the read-only `00_preflight.yml` job before write jobs. Enable job history and retain logs according to lab policy. Use `--check` through the AWX job options only as an advisory dry run because network modules may not model every field.

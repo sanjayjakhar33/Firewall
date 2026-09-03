@@ -4,5 +4,9 @@
   gather_facts: false
   vars_files:
     - ../vars/lab.yml
+  vars:
+    verify_address_subnet: "{{ test_address.modified_subnet }}"
+    verify_service_port: "{{ test_service.modified_tcp_portrange }}"
+    verify_policy_logtraffic: all
   roles:
     - role: fortigate_verify

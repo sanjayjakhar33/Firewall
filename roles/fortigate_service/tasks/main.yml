@@ -6,5 +6,5 @@
     state: "{{ service_state | default('present') }}"
     firewall_service_custom:
       name: "{{ test_service.name }}"
-      protocol: TCP
+      protocol: "{{ test_service.protocol }}"
       tcp_portrange: "{{ service_port | default(test_service.tcp_portrange) }}"

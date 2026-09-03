@@ -4,6 +4,11 @@
     vdom: "{{ fortigate_vdom }}"
     access_token: "{{ fortigate_api_token }}"
     selector: system_config_backup
+    params:
+      scope: vdom-config
+      vdom: "{{ fortigate_vdom }}"
+      file_format: json
+      password_mask: true
   register: fortigate_backup
   no_log: true
 

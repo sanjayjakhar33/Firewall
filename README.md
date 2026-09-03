@@ -157,12 +157,21 @@ ansible-galaxy collection list | grep fortinet.fortios
 ansible-inventory -i inventories/lab/hosts.yml --graph
 ```
 
+Run the read-only preflight before any write:
+
+```bash
+ansible-playbook -i inventories/lab/hosts.yml playbooks/00_preflight.yml
+```
+
+It checks that the configured interfaces and destination object exist and that policy ID `9001` is unused or already belongs to `ANSIBLE-TEST-POLICY`.
+
 ## Complete end-to-end lab test
 
 Run the following sequence only after the connection test succeeds. These are real configuration changes.
 
 ```bash
 ansible-playbook -i inventories/lab/hosts.yml playbooks/01_test_connection.yml
+ansible-playbook -i inventories/lab/hosts.yml playbooks/00_preflight.yml
 ansible-playbook -i inventories/lab/hosts.yml playbooks/11_backup_config.yml
 
 ansible-playbook -i inventories/lab/hosts.yml playbooks/02_create_address.yml

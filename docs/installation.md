@@ -14,6 +14,15 @@ python -m pip install 'ansible-core>=2.16,<2.22'
 ansible-galaxy collection install -r requirements.yml
 ```
 
+For AWX, build an execution environment from the repository definition after installing `ansible-builder`:
+
+```bash
+python3 -m pip install ansible-builder
+ansible-builder build --file execution-environment.yml --tag fortigate-awx-ee:2.6.0
+```
+
+Push that image to a registry reachable by AWX and select it on the job templates. The image must contain the pinned `fortinet.fortios` collection.
+
 ## Network gate
 
 From Ubuntu, confirm the bridge route and HTTPS port:

@@ -6,6 +6,7 @@ test_address:
 
 test_service:
   name: ANSIBLE-TEST-HTTPS
+  protocol: TCP/UDP/UDP-Lite/SCTP
   tcp_portrange: "443"
   modified_tcp_portrange: "8443"
 

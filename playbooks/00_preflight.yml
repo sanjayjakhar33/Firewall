@@ -1,0 +1,47 @@
+---
+- name: Validate lab prerequisites before writes
+  hosts: fortigates
+  gather_facts: false
+  vars_files:
+    - ../vars/lab.yml
+  tasks:
+    - name: Read interfaces
+      fortinet.fortios.fortios_configuration_fact:
+        vdom: "{{ fortigate_vdom }}"
+        access_token: "{{ fortigate_api_token }}"
+        selector: system_interface
+      register: interface_facts
+      no_log: true
+
+    - name: Read address objects
+      fortinet.fortios.fortios_configuration_fact:
+        vdom: "{{ fortigate_vdom }}"
+        access_token: "{{ fortigate_api_token }}"
+        selector: firewall_address
+      register: address_facts
+      no_log: true
+
+    - name: Read policies
+      fortinet.fortios.fortios_configuration_fact:
+        vdom: "{{ fortigate_vdom }}"
+        access_token: "{{ fortigate_api_token }}"
+        selector: firewall_policy
+      register: policy_facts
+      no_log: true
+
+    - name: Validate interfaces and destination object
+      ansible.builtin.assert:
+        that:
+          - test_policy.srcintf in (interface_facts.meta.results | map(attribute='name') | list)
+          - test_policy.dstintf in (interface_facts.meta.results | map(attribute='name') | list)
+          - test_policy.dstaddr in (address_facts.meta.results | map(attribute='name') | list)
+        fail_msg: "Required policy interface or destination object is missing; no writes were attempted."
+
+    - name: Validate policy ID is free or belongs to this test policy
+      ansible.builtin.assert:
+        that:
+          - >-
+            (policy_facts.meta.results | selectattr('policyid', 'equalto', test_policy.policyid | int) | list | length) == 0
+            or
+            (policy_facts.meta.results | selectattr('policyid', 'equalto', test_policy.policyid | int) | selectattr('name', 'equalto', test_policy.name) | list | length) == 1
+        fail_msg: "Policy ID is already used by an unrelated policy; choose another lab policy ID."

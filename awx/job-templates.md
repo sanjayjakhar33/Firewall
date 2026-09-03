@@ -2,6 +2,12 @@
 
 All templates use inventory `FortiGate-Lab`, project `FortiGate Ansible Automation`, the FortiGate credential, and the compatible execution environment.
 
+Add this read-only gate before the write templates:
+
+| Name | Playbook | Extra variables |
+|---|---|---|
+| 00 - FortiGate Lab Preflight | 00_preflight.yml | none |
+
 | Name | Playbook | Extra variables |
 |---|---|---|
 | 01 - FortiGate Connection Test | 01_test_connection.yml | none |

@@ -1,0 +1,10 @@
+version: 3
+images:
+  base_image:
+    name: quay.io/ansible/awx-ee:latest
+additional_build_steps:
+  append_final:
+    - RUN ansible-galaxy collection install -r /_build/requirements.yml -p /usr/share/ansible/collections
+additional_build_files:
+  - src: requirements.yml
+    dest: _build

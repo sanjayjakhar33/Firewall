@@ -1,1 +1,4 @@
 ---
+verify_address_subnet: "{{ test_address.subnet }}"
+verify_service_port: "{{ test_service.tcp_portrange }}"
+verify_policy_logtraffic: utm
