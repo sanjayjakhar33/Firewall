@@ -1,0 +1,10 @@
+---
+- name: Create the lab address object
+  hosts: fortigates
+  gather_facts: false
+  vars_files:
+    - ../vars/lab.yml
+  roles:
+    - role: fortigate_address
+      address_state: present
+      address_subnet: "{{ test_address.subnet }}"

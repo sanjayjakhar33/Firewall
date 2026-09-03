@@ -1,0 +1,4 @@
+collections:
+  # Pin this after recording and testing the lab's exact platform versions.
+  - name: fortinet.fortios
+    version: ">=2.3.0"

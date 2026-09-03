@@ -1,0 +1,8 @@
+---
+- name: Verify lab configuration
+  hosts: fortigates
+  gather_facts: false
+  vars_files:
+    - ../vars/lab.yml
+  roles:
+    - role: fortigate_verify

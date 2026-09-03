@@ -1,0 +1,13 @@
+.env
+.env.*
+!.env.example
+*.secret
+*.vault
+secrets/
+credentials/
+backups/*
+!backups/.gitkeep
+.venv/
+__pycache__/
+*.retry
+.ansible/

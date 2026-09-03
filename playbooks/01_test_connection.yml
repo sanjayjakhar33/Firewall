@@ -1,0 +1,20 @@
+---
+- name: Validate FortiGate API connectivity
+  hosts: fortigates
+  gather_facts: false
+  tasks:
+    - name: Query FortiOS system status
+      fortinet.fortios.fortios_monitor_fact:
+        vdom: "{{ fortigate_vdom }}"
+        access_token: "{{ fortigate_api_token }}"
+        selector: system_status
+      register: system_status
+      no_log: true
+
+    - name: Report non-sensitive connection details
+      ansible.builtin.debug:
+        msg:
+          - "FortiGate API reachable and authenticated"
+          - "VDOM: {{ fortigate_vdom }}"
+          - "Hostname: {{ system_status.meta.results.hostname | default('returned by FortiGate') }}"
+          - "FortiOS version: {{ system_status.meta.results.version | default('returned by FortiGate') }}"

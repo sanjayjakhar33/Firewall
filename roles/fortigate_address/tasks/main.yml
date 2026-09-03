@@ -1,0 +1,10 @@
+---
+- name: Reconcile FortiGate test address
+  fortinet.fortios.fortios_firewall_address:
+    vdom: "{{ fortigate_vdom }}"
+    access_token: "{{ fortigate_api_token }}"
+    state: "{{ address_state | default('present') }}"
+    firewall_address:
+      name: "{{ test_address.name }}"
+      type: ipmask
+      subnet: "{{ address_subnet | default(test_address.subnet) }}"

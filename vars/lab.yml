@@ -1,0 +1,20 @@
+---
+test_address:
+  name: ANSIBLE-TEST-SERVER
+  subnet: 10.10.10.10/32
+  modified_subnet: 10.10.10.20/32
+
+test_service:
+  name: ANSIBLE-TEST-HTTPS
+  tcp_portrange: "443"
+  modified_tcp_portrange: "8443"
+
+test_policy:
+  policyid: 9001
+  name: ANSIBLE-TEST-POLICY
+  srcintf: port1
+  dstintf: port2
+  srcaddr: ANSIBLE-TEST-SERVER
+  dstaddr: TEST-DESTINATION
+  service: ANSIBLE-TEST-HTTPS
+  action: accept

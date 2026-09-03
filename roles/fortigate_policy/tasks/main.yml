@@ -1,0 +1,23 @@
+---
+- name: Reconcile FortiGate test policy
+  fortinet.fortios.fortios_firewall_policy:
+    vdom: "{{ fortigate_vdom }}"
+    access_token: "{{ fortigate_api_token }}"
+    state: "{{ policy_state | default('present') }}"
+    firewall_policy:
+      policyid: "{{ test_policy.policyid }}"
+      name: "{{ test_policy.name }}"
+      srcintf:
+        - name: "{{ test_policy.srcintf }}"
+      dstintf:
+        - name: "{{ test_policy.dstintf }}"
+      srcaddr:
+        - name: "{{ test_policy.srcaddr }}"
+      dstaddr:
+        - name: "{{ test_policy.dstaddr }}"
+      service:
+        - name: "{{ test_policy.service }}"
+      action: "{{ test_policy.action }}"
+      schedule: always
+      nat: disable
+      logtraffic: "{{ policy_logtraffic | default('utm') }}"

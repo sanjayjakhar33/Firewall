@@ -1,0 +1,6 @@
+---
+- name: Back up FortiGate configuration before a lab change
+  hosts: fortigates
+  gather_facts: false
+  roles:
+    - role: fortigate_backup

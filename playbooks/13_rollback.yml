@@ -1,0 +1,29 @@
+---
+- name: Explicitly clean up lab objects after a failed lab change
+  hosts: fortigates
+  gather_facts: false
+  vars_files:
+    - ../vars/lab.yml
+  tasks:
+    - name: Require explicit rollback confirmation
+      ansible.builtin.assert:
+        that: rollback_confirm | default(false) | bool
+        fail_msg: "Set -e rollback_confirm=true to execute targeted lab cleanup."
+
+    - name: Remove lab policy only
+      ansible.builtin.include_role:
+        name: fortigate_policy
+      vars:
+        policy_state: absent
+
+    - name: Remove lab service only
+      ansible.builtin.include_role:
+        name: fortigate_service
+      vars:
+        service_state: absent
+
+    - name: Remove lab address only
+      ansible.builtin.include_role:
+        name: fortigate_address
+      vars:
+        address_state: absent

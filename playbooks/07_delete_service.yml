@@ -1,0 +1,9 @@
+---
+- name: Delete only the lab service object
+  hosts: fortigates
+  gather_facts: false
+  vars_files:
+    - ../vars/lab.yml
+  roles:
+    - role: fortigate_service
+      service_state: absent

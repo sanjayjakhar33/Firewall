@@ -1,0 +1,23 @@
+---
+- name: Retrieve current FortiGate configuration backup
+  fortinet.fortios.fortios_monitor_fact:
+    vdom: "{{ fortigate_vdom }}"
+    access_token: "{{ fortigate_api_token }}"
+    selector: system_config_backup
+  register: fortigate_backup
+  no_log: true
+
+- name: Ensure backup directory exists
+  ansible.builtin.file:
+    path: "{{ backup_directory }}"
+    state: directory
+    mode: '0700'
+  delegate_to: localhost
+
+- name: Write timestamped local backup
+  ansible.builtin.copy:
+    content: "{{ fortigate_backup | to_nice_json }}"
+    dest: "{{ backup_directory }}/fortigate_lab_{{ lookup('pipe', 'date +%Y-%m-%d_%H%M%S') }}.json"
+    mode: '0600'
+  delegate_to: localhost
+  no_log: true
