@@ -211,7 +211,7 @@ In AWX create:
 2. Inventory: `FortiGate-Lab`, containing `fortigate01` in group `fortigates`.
 3. Project: `FortiGate Ansible Automation`, pointing to this Git repository and `main`.
 4. Execution Environment: Ansible Core/Python compatible with `requirements.yml`, with `fortinet.fortios` installed.
-5. Credential: a secret-backed custom credential injecting `FORTIGATE_API_TOKEN`; provide host, VDOM, and certificate validation as approved non-secret runtime values.
+5. Credential: a secret-backed custom credential injecting all four `FORTIGATE_*` variables as documented in `awx/credentials.md`.
 6. Job templates: the 13 templates documented in `awx/job-templates.md`.
 7. Workflow: the validation -> backup -> change -> verify flow documented in `awx/workflows.md`.
 
@@ -243,27 +243,6 @@ Do not force-push or commit a populated `.env`. If a secret was ever staged, sto
 ## What is and is not ready
 
 The repository is ready for local syntax validation, collection installation, and a real lab test after the local values above are set. It is not yet proven against your FortiGate until `01_test_connection.yml` succeeds. Full end-to-end validation also depends on your FortiOS version, API permissions, existing interfaces, destination object, certificate, and AWX execution environment.
-
-## Install dependencies manually
-
-```bash
-sudo apt update
-sudo apt install -y git python3-venv
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install --upgrade pip
-python -m pip install 'ansible-core>=2.16,<2.22'
-ansible-galaxy collection install -r requirements.yml
-cp .env.example .env
-```
-
-Populate `.env` locally, source it only in the shell running Ansible, and never commit it:
-
-```bash
-set -a; source .env; set +a
-ansible-inventory -i inventories/lab/hosts.yml --graph
-ansible-playbook -i inventories/lab/hosts.yml playbooks/01_test_connection.yml
-```
 
 Run write playbooks only against the lab and only after the connection test succeeds. Each supports Ansible check mode where the collection module supports it; network modules cannot promise a perfect dry run for every FortiOS field.
 

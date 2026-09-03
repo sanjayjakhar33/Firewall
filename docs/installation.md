@@ -28,9 +28,10 @@ Push that image to a registry reachable by AWX and select it on the job template
 From Ubuntu, confirm the bridge route and HTTPS port:
 
 ```bash
-ip route get FORTIGATE_HOST
-nc -vz -w 5 FORTIGATE_HOST 443
-curl -kI --connect-timeout 5 https://FORTIGATE_HOST
+set -a; source .env; set +a
+ip route get "$FORTIGATE_HOST"
+nc -vz -w 5 "$FORTIGATE_HOST" 443
+curl -kI --connect-timeout 5 "https://$FORTIGATE_HOST"
 ```
 
 A FortiGate HTTP 401/403 response still proves transport reachability. Replace `FORTIGATE_HOST` with the local value; never commit it if it is sensitive.
