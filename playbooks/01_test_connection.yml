@@ -1,11 +1,12 @@
-----
-    - name: Check token variable is actually populated (length only, not the value)
-      ansible.builtin.debug:
-        msg: "Token length: {{ fortigate_api_token | length }} | VDOM: {{ fortigate_vdom }} | Host var: {{ fortigate_host_raw | default('undefined') }}"
+---
 - name: Validate FortiGate API connectivity
   hosts: fortigates
   gather_facts: false
   tasks:
+    - name: Check token variable is actually populated (length only, not the value)
+      ansible.builtin.debug:
+        msg: "Token length: {{ fortigate_api_token | length }} | VDOM: {{ fortigate_vdom }} | Host var: {{ fortigate_host_raw | default('undefined') }}"
+
     - name: Query FortiOS system status
       fortinet.fortios.fortios_monitor_fact:
         vdom: "{{ fortigate_vdom }}"
