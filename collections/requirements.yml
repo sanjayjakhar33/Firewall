@@ -1,0 +1,4 @@
+collections:
+  # Tested locally with Ansible Core 2.21.3 and Python 3.12.1.
+  - name: fortinet.fortios
+    version: "==2.6.0"
