@@ -9,7 +9,12 @@
         access_token: "{{ fortigate_api_token }}"
         selector: system_status
       register: system_status
-      no_log: true
+      ignore_errors: true
+
+    - name: Show failure reason only (no token)
+      ansible.builtin.debug:
+        msg: "Failed: {{ system_status.msg | default('no msg') }} | HTTP status: {{ system_status.http_status | default(system_status.status | default('n/a')) }}"
+      when: system_status is failed
 
     - name: Report non-sensitive connection details
       ansible.builtin.debug:
@@ -18,3 +23,4 @@
           - "VDOM: {{ fortigate_vdom }}"
           - "Hostname: {{ system_status.meta.results.hostname | default('returned by FortiGate') }}"
           - "FortiOS version: {{ system_status.meta.results.version | default('returned by FortiGate') }}"
+      when: system_status is succeeded
