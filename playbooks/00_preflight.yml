@@ -5,43 +5,75 @@
   vars_files:
     - ../vars/lab.yml
   tasks:
-    - name: Read interfaces
-      fortinet.fortios.fortios_configuration_fact:
-        vdom: "{{ fortigate_vdom }}"
-        access_token: "{{ fortigate_api_token }}"
-        selector: system_interface
-      register: interface_facts
+    - name: Read the configured source interface
+      ansible.builtin.uri:
+        url: "{{ fortigate_api_base }}/cmdb/system/interface/{{ test_policy.srcintf | urlencode }}?vdom={{ fortigate_vdom | urlencode }}"
+        method: GET
+        headers:
+          Authorization: "Bearer {{ fortigate_api_token }}"
+        validate_certs: "{{ fortigate_validate_certs }}"
+        return_content: true
+        status_code: [200, 404]
+      register: source_interface
+      changed_when: false
       no_log: true
 
-    - name: Read address objects
-      fortinet.fortios.fortios_configuration_fact:
-        vdom: "{{ fortigate_vdom }}"
-        access_token: "{{ fortigate_api_token }}"
-        selector: firewall_address
-      register: address_facts
+    - name: Read the configured destination interface
+      ansible.builtin.uri:
+        url: "{{ fortigate_api_base }}/cmdb/system/interface/{{ test_policy.dstintf | urlencode }}?vdom={{ fortigate_vdom | urlencode }}"
+        method: GET
+        headers:
+          Authorization: "Bearer {{ fortigate_api_token }}"
+        validate_certs: "{{ fortigate_validate_certs }}"
+        return_content: true
+        status_code: [200, 404]
+      register: destination_interface
+      changed_when: false
       no_log: true
 
-    - name: Read policies
-      fortinet.fortios.fortios_configuration_fact:
-        vdom: "{{ fortigate_vdom }}"
-        access_token: "{{ fortigate_api_token }}"
-        selector: firewall_policy
-      register: policy_facts
+    - name: Read the configured destination address
+      ansible.builtin.uri:
+        url: "{{ fortigate_api_base }}/cmdb/firewall/address/{{ test_policy.dstaddr | urlencode }}?vdom={{ fortigate_vdom | urlencode }}"
+        method: GET
+        headers:
+          Authorization: "Bearer {{ fortigate_api_token }}"
+        validate_certs: "{{ fortigate_validate_certs }}"
+        return_content: true
+        status_code: [200, 404]
+      register: destination_address
+      changed_when: false
+      no_log: true
+
+    - name: Read the configured policy ID
+      ansible.builtin.uri:
+        url: "{{ fortigate_api_base }}/cmdb/firewall/policy/{{ test_policy.policyid }}?vdom={{ fortigate_vdom | urlencode }}"
+        method: GET
+        headers:
+          Authorization: "Bearer {{ fortigate_api_token }}"
+        validate_certs: "{{ fortigate_validate_certs }}"
+        return_content: true
+        status_code: [200, 404]
+      register: policy_fact
+      changed_when: false
       no_log: true
 
     - name: Validate interfaces and destination object
       ansible.builtin.assert:
         that:
-          - test_policy.srcintf in (interface_facts.meta.results | map(attribute='name') | list)
-          - test_policy.dstintf in (interface_facts.meta.results | map(attribute='name') | list)
-          - test_policy.dstaddr in (address_facts.meta.results | map(attribute='name') | list)
+          - source_interface.status == 200
+          - (source_interface.json.results | default({})).name == test_policy.srcintf
+          - destination_interface.status == 200
+          - (destination_interface.json.results | default({})).name == test_policy.dstintf
+          - destination_address.status == 200
+          - (destination_address.json.results | default({})).name == test_policy.dstaddr
         fail_msg: "Required policy interface or destination object is missing; no writes were attempted."
 
     - name: Validate policy ID is free or belongs to this test policy
       ansible.builtin.assert:
         that:
           - >-
-            (policy_facts.meta.results | selectattr('policyid', 'equalto', test_policy.policyid | int) | list | length) == 0
+            policy_fact.status == 404
             or
-            (policy_facts.meta.results | selectattr('policyid', 'equalto', test_policy.policyid | int) | selectattr('name', 'equalto', test_policy.name) | list | length) == 1
+            ((policy_fact.json.results | default({})).policyid | int == test_policy.policyid | int
+            and (policy_fact.json.results | default({})).name == test_policy.name)
         fail_msg: "Policy ID is already used by an unrelated policy; choose another lab policy ID."

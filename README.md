@@ -8,7 +8,7 @@ The project performs real create, modify, delete, verification, and backup opera
 
 ## Architecture
 
-Windows host -> VMware Workstation (bridged networking) -> FortiGate VM and Ubuntu VM -> AWX -> Ansible -> `fortinet.fortios` -> FortiOS REST API over HTTPS.
+Windows host -> VMware Workstation (bridged networking) -> FortiGate VM and Ubuntu VM -> AWX -> Ansible `ansible.builtin.uri` -> FortiOS REST API over HTTPS.
 
 The Ubuntu VM and FortiGate management interface must be on a reachable network. Bridged mode normally places both guests on the physical LAN, so restrict FortiGate administrative access to the Ubuntu VM's address and do not expose the API to the Internet.
 
@@ -75,8 +75,8 @@ The AWX administrator creates these resources. An automation operator needs perm
 1. You log in to the FortiGate GUI with a human MFA account to inspect the lab and confirm the target VDOM.
 2. You store the API token in the AWX credential, or in local `.env` for direct Ubuntu testing. Git contains only placeholders.
 3. AWX checks out the Git project and starts the selected execution environment.
-4. Ansible reads `inventories/lab/hosts.yml` and `vars/lab.yml`. The `httpapi` connection opens HTTPS to `FORTIGATE_HOST` and sends the token to the FortiOS API for `FORTIGATE_VDOM`.
-5. The selected FortiOS module compares the requested object with the current state. It creates or updates only when needed, which produces idempotent repeated runs.
+4. Ansible reads `inventories/lab/hosts.yml` and `vars/lab.yml`. Built-in URI requests open HTTPS to `FORTIGATE_HOST` and send the token to the FortiOS API for `FORTIGATE_VDOM`.
+5. Each role performs a targeted GET before a create, update, or delete. It writes only when the named object differs from the requested state, which produces idempotent repeated runs.
 6. The backup job stores a restricted timestamped response locally before changes. AWX job history records task results, while sensitive tasks are masked.
 7. The verification job reads the address, service, and policy facts and fails if the expected state is absent or incorrect.
 8. If a known lab verification failure requires cleanup, the operator launches rollback with explicit confirmation. It removes only the named `ANSIBLE-TEST-*` objects and policy; it does not restore arbitrary configuration.
@@ -87,8 +87,8 @@ The FortiGate GUI and AWX output are complementary: use the GUI to inspect actua
 
 - FortiOS version recorded and checked against the selected collection release
 - Ubuntu 24.04 or another supported Linux VM, Python 3.12+, Git, and network route to FortiGate TCP/443
-- Ansible Core 2.16+ and the current `fortinet.fortios` collection
-- AWX installed using a currently supported AWX deployment method and an execution environment containing this collection
+- Ansible Core 2.16+
+- AWX installed using a currently supported AWX deployment method and an execution environment containing Ansible's built-in URI module
 - FortiGate VDOM, HTTPS administrative access, and a dedicated API token with least privilege
 
 The collection currently documents Ansible Core 2.16+ and Python 3.12+ as requirements. Do not infer full FortiOS/AWX compatibility from that floor: record the exact FortiOS and AWX versions and verify them before pinning a release.
@@ -106,10 +106,9 @@ python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
 python -m pip install 'ansible-core>=2.16,<2.22'
-ansible-galaxy collection install -r requirements.yml
 ```
 
-The collection currently resolves to `fortinet.fortios` 2.6.0 when this project is installed. Before UAT or production, pin the exact release tested with your FortiOS, Ansible Core, Python, and AWX versions.
+Before UAT or production, record the exact FortiOS, Ansible Core, Python, and AWX versions tested with this project.
 
 ## Files to edit after cloning
 
@@ -148,12 +147,11 @@ curl -kI --connect-timeout 5 "https://$FORTIGATE_HOST"
 
 The `curl` request may return `401` or `403`; that still confirms HTTPS transport. A timeout or refused connection must be fixed in VMware/FortiGate networking first.
 
-Load the local environment and validate inventory and collection discovery:
+Load the local environment and validate inventory discovery:
 
 ```bash
 set -a; source .env; set +a
 ansible --version
-ansible-galaxy collection list | grep fortinet.fortios
 ansible-inventory -i inventories/lab/hosts.yml --graph
 ```
 
@@ -210,7 +208,7 @@ In AWX create:
 1. Organization: `FortiGate Lab`.
 2. Inventory: `FortiGate-Lab`, containing `fortigate01` in group `fortigates`.
 3. Project: `FortiGate Ansible Automation`, pointing to this Git repository and `main`.
-4. Execution Environment: Ansible Core/Python compatible with `requirements.yml`, with `fortinet.fortios` installed.
+4. Execution Environment: Ansible Core/Python compatible with this project; no FortiGate collection is installed.
 5. Credential: a secret-backed custom credential injecting all four `FORTIGATE_*` variables as documented in `awx/credentials.md`.
 6. Job templates: the 13 templates documented in `awx/job-templates.md`.
 7. Workflow: the validation -> backup -> change -> verify flow documented in `awx/workflows.md`.

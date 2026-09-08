@@ -7,7 +7,7 @@ Create these AWX resources:
 - Organization: `FortiGate Lab`
 - Inventory: `FortiGate-Lab`, containing host `fortigate01` and no token
 - Project: `FortiGate Ansible Automation`, SCM Git, repository `<MY-GIT-REPOSITORY>`, branch `main`
-- Execution Environment: an image containing Ansible Core compatible with the selected collection and `fortinet.fortios` installed from `requirements.yml`
+- Execution Environment: an image containing a compatible Ansible Core/Python combination; no FortiGate collection is required
 - Credential: custom secret-backed credential injecting all four `FORTIGATE_*` environment variables
 
 Inject these environment values in the AWX credential or an AWX-supported secret mechanism. Extra variables do not populate `lookup('env', ...)` and must not be used for this inventory:

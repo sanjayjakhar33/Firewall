@@ -17,4 +17,4 @@ Run in order, recording AWX job IDs and FortiGate GUI/API observations.
 - Failure handling: use an invalid interface or destination in a disposable lab run and confirm failure without broad deletion.
 - Rollback: run the explicit confirmed cleanup and verify the named test objects are absent.
 - Verification: confirm address subnet, service protocol/port, and policy fields, not just object names.
-- Check mode: run `ansible-playbook --check` and record which changes the collection can predict.
+- Check mode: run `ansible-playbook --check` and record which direct REST requests are skipped or still require live API state.

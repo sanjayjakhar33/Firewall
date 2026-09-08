@@ -1,16 +1,26 @@
 ---
 - name: Retrieve current FortiGate configuration backup
-  fortinet.fortios.fortios_monitor_fact:
-    vdom: "{{ fortigate_vdom }}"
-    access_token: "{{ fortigate_api_token }}"
-    selector: system_config_backup
-    params:
-      scope: vdom-config
-      vdom: "{{ fortigate_vdom }}"
-      file_format: json
-      password_mask: true
+  ansible.builtin.uri:
+    url: "{{ fortigate_api_base }}/monitor/system/config/backup?scope=vdom-config&vdom={{ fortigate_vdom | urlencode }}&file_format=json&password_mask=true"
+    method: GET
+    headers:
+      Authorization: "Bearer {{ fortigate_api_token }}"
+    validate_certs: "{{ fortigate_validate_certs }}"
+    return_content: true
+    status_code: [200]
   register: fortigate_backup
+  changed_when: false
+  failed_when: false
   no_log: true
+
+- name: Report backup request status
+  ansible.builtin.debug:
+    msg: "FortiGate backup request returned HTTP {{ fortigate_backup.status | default('unknown') }}."
+
+- name: Validate backup request
+  ansible.builtin.assert:
+    that: fortigate_backup.status | default(0) == 200
+    fail_msg: "FortiGate backup request failed with HTTP {{ fortigate_backup.status | default('unknown') }}."
 
 - name: Ensure backup directory exists
   ansible.builtin.file:
@@ -21,7 +31,7 @@
 
 - name: Write timestamped local backup
   ansible.builtin.copy:
-    content: "{{ fortigate_backup | to_nice_json }}"
+    content: "{{ fortigate_backup.json | default(fortigate_backup.content) | to_nice_json }}"
     dest: "{{ backup_directory }}/fortigate_lab_{{ lookup('pipe', 'date +%Y-%m-%d_%H%M%S') }}.json"
     mode: '0600'
   delegate_to: localhost

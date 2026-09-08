@@ -1,10 +1,95 @@
 ---
-- name: Reconcile FortiGate test address
-  fortinet.fortios.fortios_firewall_address:
-    vdom: "{{ fortigate_vdom }}"
-    access_token: "{{ fortigate_api_token }}"
-    state: "{{ address_state | default('present') }}"
-    firewall_address:
+- name: Read the named FortiGate test address
+  ansible.builtin.uri:
+    url: "{{ fortigate_api_base }}/cmdb/firewall/address/{{ test_address.name | urlencode }}?vdom={{ fortigate_vdom | urlencode }}"
+    method: GET
+    headers:
+      Authorization: "Bearer {{ fortigate_api_token }}"
+    validate_certs: "{{ fortigate_validate_certs }}"
+    return_content: true
+    status_code: [200, 404]
+  register: address_get
+  changed_when: false
+  failed_when: false
+  no_log: true
+
+- name: Report address lookup status
+  ansible.builtin.debug:
+    msg: "FortiGate address lookup returned HTTP {{ address_get.status | default('unknown') }}."
+
+- name: Validate address lookup response
+  ansible.builtin.assert:
+    that: address_get.status | default(0) in [200, 404]
+    fail_msg: "FortiGate address lookup failed with HTTP {{ address_get.status | default('unknown') }}."
+
+- name: Create the named FortiGate test address
+  ansible.builtin.uri:
+    url: "{{ fortigate_api_base }}/cmdb/firewall/address?vdom={{ fortigate_vdom | urlencode }}"
+    method: POST
+    headers:
+      Authorization: "Bearer {{ fortigate_api_token }}"
+    body:
       name: "{{ test_address.name }}"
       type: ipmask
       subnet: "{{ address_subnet | default(test_address.subnet) }}"
+    body_format: json
+    validate_certs: "{{ fortigate_validate_certs }}"
+    status_code: [200, 201]
+  register: address_create
+  when:
+    - address_state | default('present') == 'present'
+    - address_get.status | default(404) == 404
+  changed_when: true
+  failed_when: false
+  no_log: true
+
+- name: Update the named FortiGate test address
+  ansible.builtin.uri:
+    url: "{{ fortigate_api_base }}/cmdb/firewall/address/{{ test_address.name | urlencode }}?vdom={{ fortigate_vdom | urlencode }}"
+    method: PUT
+    headers:
+      Authorization: "Bearer {{ fortigate_api_token }}"
+    body:
+      name: "{{ test_address.name }}"
+      type: ipmask
+      subnet: "{{ address_subnet | default(test_address.subnet) }}"
+    body_format: json
+    validate_certs: "{{ fortigate_validate_certs }}"
+    status_code: [200]
+  register: address_update
+  when:
+    - address_state | default('present') == 'present'
+    - address_get.status | default(404) == 200
+    - (address_get.json.results | default({})).subnet | default('') != (address_subnet | default(test_address.subnet))
+  changed_when: true
+  failed_when: false
+  no_log: true
+
+- name: Delete the named FortiGate test address
+  ansible.builtin.uri:
+    url: "{{ fortigate_api_base }}/cmdb/firewall/address/{{ test_address.name | urlencode }}?vdom={{ fortigate_vdom | urlencode }}"
+    method: DELETE
+    headers:
+      Authorization: "Bearer {{ fortigate_api_token }}"
+    validate_certs: "{{ fortigate_validate_certs }}"
+    status_code: [200, 204]
+  register: address_delete
+  when:
+    - address_state | default('present') == 'absent'
+    - address_get.status | default(404) == 200
+  changed_when: true
+  failed_when: false
+  no_log: true
+
+- name: Report address write result
+  ansible.builtin.debug:
+    msg: "Address operation returned HTTP {{ (address_create | default(address_update | default(address_delete | default({})))).status | default('not requested') }}."
+
+- name: Validate address write result
+  ansible.builtin.assert:
+    that:
+      - >-
+        (address_create is not defined or address_create.status | default(0) in [200, 201])
+        and (address_update is not defined or address_update.status | default(0) == 200)
+        and (address_delete is not defined or address_delete.status | default(0) in [200, 204])
+    fail_msg: "FortiGate address operation failed; inspect the HTTP status and FortiGate response above."

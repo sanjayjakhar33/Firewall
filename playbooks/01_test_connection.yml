@@ -1,23 +1,38 @@
 ---
-- name: Validate FortiGate API connectivity (bypass httpapi connection plugin)
+- name: Validate FortiGate API connectivity
   hosts: localhost
   gather_facts: false
   vars:
-    fortigate_host: "{{ lookup('env', 'FORTIGATE_HOST') }}"
+    fortigate_host_raw: "{{ lookup('env', 'FORTIGATE_HOST') }}"
+    fortigate_port_raw: "{{ lookup('env', 'FORTIGATE_PORT') | default('443', true) }}"
     fortigate_vdom: "{{ lookup('env', 'FORTIGATE_VDOM') | default('root', true) }}"
     fortigate_api_token: "{{ lookup('env', 'FORTIGATE_API_TOKEN') }}"
+    fortigate_validate_certs: "{{ (lookup('env', 'FORTIGATE_VALIDATE_CERTS') | default('false', true)) | bool }}"
+    fortigate_api_base: "https://{{ fortigate_host_raw }}:{{ fortigate_port_raw }}/api/v2"
   tasks:
-    - name: Query FortiOS system status via plain REST call
+    - name: Query FortiOS system status
       ansible.builtin.uri:
-        url: "https://{{ fortigate_host }}/api/v2/monitor/system/status?vdom={{ fortigate_vdom }}"
+        url: "{{ fortigate_api_base }}/monitor/system/status?vdom={{ fortigate_vdom | urlencode }}"
         method: GET
         headers:
           Authorization: "Bearer {{ fortigate_api_token }}"
-        validate_certs: false
+        validate_certs: "{{ fortigate_validate_certs }}"
         return_content: true
-      register: result
+        status_code: [200]
+      register: system_status
+      changed_when: false
+      failed_when: false
       no_log: true
 
-    - name: Show result
+    - name: Validate FortiGate API response
+      ansible.builtin.assert:
+        that: system_status.status | default(0) == 200
+        fail_msg: "FortiGate API request failed with HTTP {{ system_status.status | default('unknown') }}."
+
+    - name: Report non-sensitive connection details
       ansible.builtin.debug:
-        msg: "Status: {{ result.status }} | Hostname: {{ (result.content | from_json).hostname | default('n/a') }}"
+        msg:
+          - "FortiGate API reachable and authenticated"
+          - "VDOM: {{ fortigate_vdom }}"
+          - "Hostname: {{ system_status.json.results.hostname | default('returned by FortiGate') }}"
+          - "FortiOS version: {{ system_status.json.results.version | default('returned by FortiGate') }}"

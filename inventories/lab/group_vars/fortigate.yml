@@ -1,3 +1,10 @@
 ---
 # Runtime values come from the environment or vars/lab.yml. No secrets belong here.
 ansible_become: false
+fortigate_host_raw: "{{ lookup('env', 'FORTIGATE_HOST') }}"
+fortigate_port_raw: "{{ lookup('env', 'FORTIGATE_PORT') | default('443', true) }}"
+fortigate_token_raw: "{{ lookup('env', 'FORTIGATE_API_TOKEN') }}"
+fortigate_vdom: "{{ lookup('env', 'FORTIGATE_VDOM') | default('root', true) }}"
+fortigate_api_token: "{{ fortigate_token_raw }}"
+fortigate_validate_certs: "{{ (lookup('env', 'FORTIGATE_VALIDATE_CERTS') | default('false', true)) | bool }}"
+fortigate_api_base: "https://{{ fortigate_host_raw }}:{{ fortigate_port_raw }}/api/v2"

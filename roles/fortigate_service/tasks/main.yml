@@ -1,10 +1,97 @@
 ---
-- name: Reconcile FortiGate test service
-  fortinet.fortios.fortios_firewall_service_custom:
-    vdom: "{{ fortigate_vdom }}"
-    access_token: "{{ fortigate_api_token }}"
-    state: "{{ service_state | default('present') }}"
-    firewall_service_custom:
+- name: Read the named FortiGate test service
+  ansible.builtin.uri:
+    url: "{{ fortigate_api_base }}/cmdb/firewall.service/custom/{{ test_service.name | urlencode }}?vdom={{ fortigate_vdom | urlencode }}"
+    method: GET
+    headers:
+      Authorization: "Bearer {{ fortigate_api_token }}"
+    validate_certs: "{{ fortigate_validate_certs }}"
+    return_content: true
+    status_code: [200, 404]
+  register: service_get
+  changed_when: false
+  failed_when: false
+  no_log: true
+
+- name: Report service lookup status
+  ansible.builtin.debug:
+    msg: "FortiGate service lookup returned HTTP {{ service_get.status | default('unknown') }}."
+
+- name: Validate service lookup response
+  ansible.builtin.assert:
+    that: service_get.status | default(0) in [200, 404]
+    fail_msg: "FortiGate service lookup failed with HTTP {{ service_get.status | default('unknown') }}."
+
+- name: Create the named FortiGate test service
+  ansible.builtin.uri:
+    url: "{{ fortigate_api_base }}/cmdb/firewall.service/custom?vdom={{ fortigate_vdom | urlencode }}"
+    method: POST
+    headers:
+      Authorization: "Bearer {{ fortigate_api_token }}"
+    body:
       name: "{{ test_service.name }}"
       protocol: "{{ test_service.protocol }}"
       tcp_portrange: "{{ service_port | default(test_service.tcp_portrange) }}"
+    body_format: json
+    validate_certs: "{{ fortigate_validate_certs }}"
+    status_code: [200, 201]
+  register: service_create
+  when:
+    - service_state | default('present') == 'present'
+    - service_get.status | default(404) == 404
+  changed_when: true
+  failed_when: false
+  no_log: true
+
+- name: Update the named FortiGate test service
+  ansible.builtin.uri:
+    url: "{{ fortigate_api_base }}/cmdb/firewall.service/custom/{{ test_service.name | urlencode }}?vdom={{ fortigate_vdom | urlencode }}"
+    method: PUT
+    headers:
+      Authorization: "Bearer {{ fortigate_api_token }}"
+    body:
+      name: "{{ test_service.name }}"
+      protocol: "{{ test_service.protocol }}"
+      tcp_portrange: "{{ service_port | default(test_service.tcp_portrange) }}"
+    body_format: json
+    validate_certs: "{{ fortigate_validate_certs }}"
+    status_code: [200]
+  register: service_update
+  when:
+    - service_state | default('present') == 'present'
+    - service_get.status | default(404) == 200
+    - >-
+      (service_get.json.results | default({})).protocol | default('') != test_service.protocol
+      or (service_get.json.results | default({})).tcp_portrange | default('') != (service_port | default(test_service.tcp_portrange))
+  changed_when: true
+  failed_when: false
+  no_log: true
+
+- name: Delete the named FortiGate test service
+  ansible.builtin.uri:
+    url: "{{ fortigate_api_base }}/cmdb/firewall.service/custom/{{ test_service.name | urlencode }}?vdom={{ fortigate_vdom | urlencode }}"
+    method: DELETE
+    headers:
+      Authorization: "Bearer {{ fortigate_api_token }}"
+    validate_certs: "{{ fortigate_validate_certs }}"
+    status_code: [200, 204]
+  register: service_delete
+  when:
+    - service_state | default('present') == 'absent'
+    - service_get.status | default(404) == 200
+  changed_when: true
+  failed_when: false
+  no_log: true
+
+- name: Report service write result
+  ansible.builtin.debug:
+    msg: "Service operation returned HTTP {{ (service_create | default(service_update | default(service_delete | default({})))).status | default('not requested') }}."
+
+- name: Validate service write result
+  ansible.builtin.assert:
+    that:
+      - >-
+        (service_create is not defined or service_create.status | default(0) in [200, 201])
+        and (service_update is not defined or service_update.status | default(0) == 200)
+        and (service_delete is not defined or service_delete.status | default(0) in [200, 204])
+    fail_msg: "FortiGate service operation failed; inspect the HTTP status and FortiGate response above."

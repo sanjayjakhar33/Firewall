@@ -1,10 +1,42 @@
 ---
-- name: Reconcile FortiGate test policy
-  fortinet.fortios.fortios_firewall_policy:
-    vdom: "{{ fortigate_vdom }}"
-    access_token: "{{ fortigate_api_token }}"
-    state: "{{ policy_state | default('present') }}"
-    firewall_policy:
+- name: Read the FortiGate test policy by policy ID
+  ansible.builtin.uri:
+    url: "{{ fortigate_api_base }}/cmdb/firewall/policy/{{ test_policy.policyid }}?vdom={{ fortigate_vdom | urlencode }}"
+    method: GET
+    headers:
+      Authorization: "Bearer {{ fortigate_api_token }}"
+    validate_certs: "{{ fortigate_validate_certs }}"
+    return_content: true
+    status_code: [200, 404]
+  register: policy_get
+  changed_when: false
+  failed_when: false
+  no_log: true
+
+- name: Report policy lookup status
+  ansible.builtin.debug:
+    msg: "FortiGate policy lookup returned HTTP {{ policy_get.status | default('unknown') }}."
+
+- name: Validate policy lookup response
+  ansible.builtin.assert:
+    that: policy_get.status | default(0) in [200, 404]
+    fail_msg: "FortiGate policy lookup failed with HTTP {{ policy_get.status | default('unknown') }}."
+
+- name: Reject an unrelated policy occupying the lab policy ID
+  ansible.builtin.assert:
+    that: (policy_get.json.results | default({})).name | default(test_policy.name) == test_policy.name
+    fail_msg: "Policy ID {{ test_policy.policyid }} belongs to an unrelated policy; no write was attempted."
+  when:
+    - policy_state | default('present') in ['present', 'absent']
+    - policy_get.status | default(404) == 200
+
+- name: Create the FortiGate test policy
+  ansible.builtin.uri:
+    url: "{{ fortigate_api_base }}/cmdb/firewall/policy?vdom={{ fortigate_vdom | urlencode }}"
+    method: POST
+    headers:
+      Authorization: "Bearer {{ fortigate_api_token }}"
+    body:
       policyid: "{{ test_policy.policyid }}"
       name: "{{ test_policy.name }}"
       srcintf:
@@ -21,3 +53,85 @@
       schedule: always
       nat: disable
       logtraffic: "{{ policy_logtraffic | default('utm') }}"
+    body_format: json
+    validate_certs: "{{ fortigate_validate_certs }}"
+    status_code: [200, 201]
+  register: policy_create
+  when:
+    - policy_state | default('present') == 'present'
+    - policy_get.status | default(404) == 404
+  changed_when: true
+  failed_when: false
+  no_log: true
+
+- name: Update the FortiGate test policy
+  ansible.builtin.uri:
+    url: "{{ fortigate_api_base }}/cmdb/firewall/policy/{{ test_policy.policyid }}?vdom={{ fortigate_vdom | urlencode }}"
+    method: PUT
+    headers:
+      Authorization: "Bearer {{ fortigate_api_token }}"
+    body:
+      policyid: "{{ test_policy.policyid }}"
+      name: "{{ test_policy.name }}"
+      srcintf:
+        - name: "{{ test_policy.srcintf }}"
+      dstintf:
+        - name: "{{ test_policy.dstintf }}"
+      srcaddr:
+        - name: "{{ test_policy.srcaddr }}"
+      dstaddr:
+        - name: "{{ test_policy.dstaddr }}"
+      service:
+        - name: "{{ test_policy.service }}"
+      action: "{{ test_policy.action }}"
+      schedule: always
+      nat: disable
+      logtraffic: "{{ policy_logtraffic | default('utm') }}"
+    body_format: json
+    validate_certs: "{{ fortigate_validate_certs }}"
+    status_code: [200]
+  register: policy_update
+  when:
+    - policy_state | default('present') == 'present'
+    - policy_get.status | default(404) == 200
+    - >-
+      (policy_get.json.results | default({})).name | default('') != test_policy.name
+      or (policy_get.json.results | default({})).action | default('') != test_policy.action
+      or (policy_get.json.results | default({})).logtraffic | default('') != (policy_logtraffic | default('utm'))
+      or ((policy_get.json.results | default({})).srcintf | default([]) | map(attribute='name') | list) != [test_policy.srcintf]
+      or ((policy_get.json.results | default({})).dstintf | default([]) | map(attribute='name') | list) != [test_policy.dstintf]
+      or ((policy_get.json.results | default({})).srcaddr | default([]) | map(attribute='name') | list) != [test_policy.srcaddr]
+      or ((policy_get.json.results | default({})).dstaddr | default([]) | map(attribute='name') | list) != [test_policy.dstaddr]
+      or ((policy_get.json.results | default({})).service | default([]) | map(attribute='name') | list) != [test_policy.service]
+  changed_when: true
+  failed_when: false
+  no_log: true
+
+- name: Delete the FortiGate test policy
+  ansible.builtin.uri:
+    url: "{{ fortigate_api_base }}/cmdb/firewall/policy/{{ test_policy.policyid }}?vdom={{ fortigate_vdom | urlencode }}"
+    method: DELETE
+    headers:
+      Authorization: "Bearer {{ fortigate_api_token }}"
+    validate_certs: "{{ fortigate_validate_certs }}"
+    status_code: [200, 204]
+  register: policy_delete
+  when:
+    - policy_state | default('present') == 'absent'
+    - policy_get.status | default(404) == 200
+  changed_when: true
+  failed_when: false
+  no_log: true
+
+- name: Report policy write result
+  ansible.builtin.debug:
+    msg: "Policy operation returned HTTP {{ (policy_create | default(policy_update | default(policy_delete | default({})))).status | default('not requested') }}."
+
+- name: Validate policy write result
+  ansible.builtin.assert:
+    that:
+      - >-
+        (policy_create is not defined or policy_create.status | default(0) in [200, 201])
+        and (policy_update is not defined or policy_update.status | default(0) == 200)
+        and (policy_delete is not defined or policy_delete.status | default(0) in [200, 204])
+    fail_msg: "FortiGate policy operation failed; inspect the HTTP status and FortiGate response above."

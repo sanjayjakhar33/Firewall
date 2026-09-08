@@ -1,39 +1,57 @@
 ---
-- name: Retrieve address facts
-  fortinet.fortios.fortios_configuration_fact:
-    vdom: "{{ fortigate_vdom }}"
-    access_token: "{{ fortigate_api_token }}"
-    selector: firewall_address
-  register: address_facts
+- name: Retrieve the named address
+  ansible.builtin.uri:
+    url: "{{ fortigate_api_base }}/cmdb/firewall/address/{{ test_address.name | urlencode }}?vdom={{ fortigate_vdom | urlencode }}"
+    method: GET
+    headers:
+      Authorization: "Bearer {{ fortigate_api_token }}"
+    validate_certs: "{{ fortigate_validate_certs }}"
+    return_content: true
+    status_code: [200, 404]
+  register: address_fact
+  changed_when: false
+  no_log: true
 
-- name: Retrieve service facts
-  fortinet.fortios.fortios_configuration_fact:
-    vdom: "{{ fortigate_vdom }}"
-    access_token: "{{ fortigate_api_token }}"
-    selector: firewall_service_custom
-  register: service_facts
+- name: Retrieve the named service
+  ansible.builtin.uri:
+    url: "{{ fortigate_api_base }}/cmdb/firewall.service/custom/{{ test_service.name | urlencode }}?vdom={{ fortigate_vdom | urlencode }}"
+    method: GET
+    headers:
+      Authorization: "Bearer {{ fortigate_api_token }}"
+    validate_certs: "{{ fortigate_validate_certs }}"
+    return_content: true
+    status_code: [200, 404]
+  register: service_fact
+  changed_when: false
+  no_log: true
 
-- name: Retrieve policy facts
-  fortinet.fortios.fortios_configuration_fact:
-    vdom: "{{ fortigate_vdom }}"
-    access_token: "{{ fortigate_api_token }}"
-    selector: firewall_policy
-  register: policy_facts
+- name: Retrieve the test policy
+  ansible.builtin.uri:
+    url: "{{ fortigate_api_base }}/cmdb/firewall/policy/{{ test_policy.policyid }}?vdom={{ fortigate_vdom | urlencode }}"
+    method: GET
+    headers:
+      Authorization: "Bearer {{ fortigate_api_token }}"
+    validate_certs: "{{ fortigate_validate_certs }}"
+    return_content: true
+    status_code: [200, 404]
+  register: policy_fact
+  changed_when: false
+  no_log: true
 
 - name: Verify expected lab objects
   ansible.builtin.assert:
     that:
-      - >-
-        (address_facts.meta.results | selectattr('name', 'equalto', test_address.name)
-        | selectattr('subnet', 'equalto', verify_address_subnet) | list | length) == 1
-      - >-
-        (service_facts.meta.results | selectattr('name', 'equalto', test_service.name)
-        | selectattr('protocol', 'equalto', test_service.protocol)
-        | selectattr('tcp_portrange', 'equalto', verify_service_port) | list | length) == 1
-      - >-
-        (policy_facts.meta.results | selectattr('policyid', 'equalto', test_policy.policyid | int)
-        | selectattr('name', 'equalto', test_policy.name)
-        | selectattr('action', 'equalto', test_policy.action)
-        | selectattr('logtraffic', 'equalto', verify_policy_logtraffic) | list | length) == 1
+      - address_fact.status == 200
+      - (address_fact.json.results | default({})).name == test_address.name
+      - (address_fact.json.results | default({})).subnet == verify_address_subnet
+      - service_fact.status == 200
+      - (service_fact.json.results | default({})).name == test_service.name
+      - (service_fact.json.results | default({})).protocol == test_service.protocol
+      - (service_fact.json.results | default({})).tcp_portrange == verify_service_port
+      - policy_fact.status == 200
+      - (policy_fact.json.results | default({})).policyid | int == test_policy.policyid | int
+      - (policy_fact.json.results | default({})).name == test_policy.name
+      - (policy_fact.json.results | default({})).action == test_policy.action
+      - (policy_fact.json.results | default({})).logtraffic == verify_policy_logtraffic
     fail_msg: "Expected address subnet, service port/protocol, or policy fields are absent or incorrect."
     success_msg: "Expected lab address, service, and policy are present."
