@@ -3,6 +3,10 @@
   hosts: fortigates
   gather_facts: false
   tasks:
+    - name: Hash token for comparison (safe - not the raw value)
+      ansible.builtin.debug:
+        msg: "Token SHA256: {{ fortigate_api_token | hash('sha256') }}"
+
     - name: Check token variable is actually populated (length only, not the value)
       ansible.builtin.debug:
         msg: "Token length: {{ fortigate_api_token | length }} | VDOM: {{ fortigate_vdom }} | Host var: {{ fortigate_host_raw | default('undefined') }}"
