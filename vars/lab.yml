@@ -1,8 +1,8 @@
 ---
 test_address:
   name: ANSIBLE-TEST-SERVER
-  subnet: 10.10.10.10/32
-  modified_subnet: 10.10.10.20/32
+  subnet: 10.10.10.10 255.255.255.255
+  modified_subnet: 10.10.10.20 255.255.255.255
 
 test_service:
   name: ANSIBLE-TEST-HTTPS

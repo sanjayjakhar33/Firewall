@@ -22,6 +22,7 @@
     that: address_get.status | default(0) in [200, 404]
     fail_msg: "FortiGate address lookup failed with HTTP {{ address_get.status | default('unknown') }}."
 
+
 - name: Create the named FortiGate test address
   ansible.builtin.uri:
     url: "{{ fortigate_api_base }}/cmdb/firewall/address?vdom={{ fortigate_vdom | urlencode }}"
