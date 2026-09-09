@@ -1,6 +1,7 @@
 ---
 - name: Create the lab firewall policy
   hosts: fortigates
+  connection: local
   gather_facts: false
   vars_files:
     - ../vars/lab.yml

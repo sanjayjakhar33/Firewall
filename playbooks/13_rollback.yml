@@ -1,6 +1,7 @@
 ---
 - name: Explicitly clean up lab objects after a failed lab change
   hosts: fortigates
+  connection: local
   gather_facts: false
   vars_files:
     - ../vars/lab.yml

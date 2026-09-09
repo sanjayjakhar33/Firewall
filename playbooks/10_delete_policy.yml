@@ -1,6 +1,7 @@
 ---
 - name: Delete only the explicitly identified lab policy
   hosts: fortigates
+  connection: local
   gather_facts: false
   vars_files:
     - ../vars/lab.yml

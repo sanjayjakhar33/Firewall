@@ -1,6 +1,7 @@
 ---
 - name: Create the lab address object
   hosts: fortigates
+  connection: local
   gather_facts: false
   vars_files:
     - ../vars/lab.yml

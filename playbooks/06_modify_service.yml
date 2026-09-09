@@ -1,6 +1,7 @@
 ---
 - name: Modify the lab service object
   hosts: fortigates
+  connection: local
   gather_facts: false
   vars_files:
     - ../vars/lab.yml

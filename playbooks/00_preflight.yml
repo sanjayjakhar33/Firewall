@@ -1,6 +1,7 @@
 ---
 - name: Validate lab prerequisites before writes
   hosts: fortigates
+  connection: local
   gather_facts: false
   vars_files:
     - ../vars/lab.yml
