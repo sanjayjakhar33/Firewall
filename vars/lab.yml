@@ -16,6 +16,6 @@ test_policy:
   srcintf: port1
   dstintf: port2
   srcaddr: ANSIBLE-TEST-SERVER
-  dstaddr: TEST-DESTINATION
+  dstaddr: all
   service: ANSIBLE-TEST-HTTPS
   action: accept
