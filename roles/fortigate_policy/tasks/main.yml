@@ -131,7 +131,7 @@
   ansible.builtin.assert:
     that:
       - >-
-        (policy_create is not defined or policy_create.status | default(0) in [200, 201])
-        and (policy_update is not defined or policy_update.status | default(0) == 200)
-        and (policy_delete is not defined or policy_delete.status | default(0) in [200, 204])
+        (policy_create.skipped | default(false) or policy_create.status | default(0) in [200, 201])
+        and (policy_update.skipped | default(false) or policy_update.status | default(0) == 200)
+        and (policy_delete.skipped | default(false) or policy_delete.status | default(0) in [200, 204])
     fail_msg: "FortiGate policy operation failed; inspect the HTTP status and FortiGate response above."

@@ -91,7 +91,7 @@
   ansible.builtin.assert:
     that:
       - >-
-        (service_create is not defined or service_create.status | default(0) in [200, 201])
-        and (service_update is not defined or service_update.status | default(0) == 200)
-        and (service_delete is not defined or service_delete.status | default(0) in [200, 204])
+        (service_create.skipped | default(false) or service_create.status | default(0) in [200, 201])
+        and (service_update.skipped | default(false) or service_update.status | default(0) == 200)
+        and (service_delete.skipped | default(false) or service_delete.status | default(0) in [200, 204])
     fail_msg: "FortiGate service operation failed; inspect the HTTP status and FortiGate response above."

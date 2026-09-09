@@ -89,7 +89,7 @@
   ansible.builtin.assert:
     that:
       - >-
-        (address_create is not defined or address_create.status | default(0) in [200, 201])
-        and (address_update is not defined or address_update.status | default(0) == 200)
-        and (address_delete is not defined or address_delete.status | default(0) in [200, 204])
+        (address_create.skipped | default(false) or address_create.status | default(0) in [200, 201])
+        and (address_update.skipped | default(false) or address_update.status | default(0) == 200)
+        and (address_delete.skipped | default(false) or address_delete.status | default(0) in [200, 204])
     fail_msg: "FortiGate address operation failed; inspect the HTTP status and FortiGate response above."
