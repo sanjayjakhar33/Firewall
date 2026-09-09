@@ -42,16 +42,16 @@
   ansible.builtin.assert:
     that:
       - address_fact.status == 200
-      - (address_fact.json.results | default({})).name == test_address.name
-      - (address_fact.json.results | default({})).subnet == verify_address_subnet
+      - (address_fact.json.results | default([]) | first | default({})).name == test_address.name
+      - (address_fact.json.results | default([]) | first | default({})).subnet == verify_address_subnet
       - service_fact.status == 200
-      - (service_fact.json.results | default({})).name == test_service.name
-      - (service_fact.json.results | default({})).protocol == test_service.protocol
-      - (service_fact.json.results | default({})).tcp_portrange == verify_service_port
+      - (service_fact.json.results | default([]) | first | default({})).name == test_service.name
+      - (service_fact.json.results | default([]) | first | default({})).protocol == test_service.protocol
+      - (service_fact.json.results | default([]) | first | default({})).tcp_portrange == verify_service_port
       - policy_fact.status == 200
-      - (policy_fact.json.results | default({})).policyid | int == test_policy.policyid | int
-      - (policy_fact.json.results | default({})).name == test_policy.name
-      - (policy_fact.json.results | default({})).action == test_policy.action
-      - (policy_fact.json.results | default({})).logtraffic == verify_policy_logtraffic
+      - (policy_fact.json.results | default([]) | first | default({})).policyid | int == test_policy.policyid | int
+      - (policy_fact.json.results | default([]) | first | default({})).name == test_policy.name
+      - (policy_fact.json.results | default([]) | first | default({})).action == test_policy.action
+      - (policy_fact.json.results | default([]) | first | default({})).logtraffic == verify_policy_logtraffic
     fail_msg: "Expected address subnet, service port/protocol, or policy fields are absent or incorrect."
     success_msg: "Expected lab address, service, and policy are present."

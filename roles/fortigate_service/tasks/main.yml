@@ -61,8 +61,8 @@
     - service_state | default('present') == 'present'
     - service_get.status | default(404) == 200
     - >-
-      (service_get.json.results | default({})).protocol | default('') != test_service.protocol
-      or (service_get.json.results | default({})).tcp_portrange | default('') != (service_port | default(test_service.tcp_portrange))
+      (service_get.json.results | default([]) | first | default({})).protocol | default('') != test_service.protocol
+      or (service_get.json.results | default([]) | first | default({})).tcp_portrange | default('') != (service_port | default(test_service.tcp_portrange))
   changed_when: true
   failed_when: false
   no_log: true

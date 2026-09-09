@@ -24,7 +24,7 @@
 
 - name: Reject an unrelated policy occupying the lab policy ID
   ansible.builtin.assert:
-    that: (policy_get.json.results | default({})).name | default(test_policy.name) == test_policy.name
+    that: (policy_get.json.results | default([]) | first | default({})).name | default(test_policy.name) == test_policy.name
     fail_msg: "Policy ID {{ test_policy.policyid }} belongs to an unrelated policy; no write was attempted."
   when:
     - policy_state | default('present') in ['present', 'absent']
@@ -95,14 +95,14 @@
     - policy_state | default('present') == 'present'
     - policy_get.status | default(404) == 200
     - >-
-      (policy_get.json.results | default({})).name | default('') != test_policy.name
-      or (policy_get.json.results | default({})).action | default('') != test_policy.action
-      or (policy_get.json.results | default({})).logtraffic | default('') != (policy_logtraffic | default('utm'))
-      or ((policy_get.json.results | default({})).srcintf | default([]) | map(attribute='name') | list) != [test_policy.srcintf]
-      or ((policy_get.json.results | default({})).dstintf | default([]) | map(attribute='name') | list) != [test_policy.dstintf]
-      or ((policy_get.json.results | default({})).srcaddr | default([]) | map(attribute='name') | list) != [test_policy.srcaddr]
-      or ((policy_get.json.results | default({})).dstaddr | default([]) | map(attribute='name') | list) != [test_policy.dstaddr]
-      or ((policy_get.json.results | default({})).service | default([]) | map(attribute='name') | list) != [test_policy.service]
+      (policy_get.json.results | default([]) | first | default({})).name | default('') != test_policy.name
+      or (policy_get.json.results | default([]) | first | default({})).action | default('') != test_policy.action
+      or (policy_get.json.results | default([]) | first | default({})).logtraffic | default('') != (policy_logtraffic | default('utm'))
+      or ((policy_get.json.results | default([]) | first | default({})).srcintf | default([]) | map(attribute='name') | list) != [test_policy.srcintf]
+      or ((policy_get.json.results | default([]) | first | default({})).dstintf | default([]) | map(attribute='name') | list) != [test_policy.dstintf]
+      or ((policy_get.json.results | default([]) | first | default({})).srcaddr | default([]) | map(attribute='name') | list) != [test_policy.srcaddr]
+      or ((policy_get.json.results | default([]) | first | default({})).dstaddr | default([]) | map(attribute='name') | list) != [test_policy.dstaddr]
+      or ((policy_get.json.results | default([]) | first | default({})).service | default([]) | map(attribute='name') | list) != [test_policy.service]
   changed_when: true
   failed_when: false
   no_log: true

@@ -60,7 +60,7 @@
   when:
     - address_state | default('present') == 'present'
     - address_get.status | default(404) == 200
-    - (address_get.json.results | default({})).subnet | default('') != (address_subnet | default(test_address.subnet))
+    - (address_get.json.results | default([]) | first | default({})).subnet | default('') != (address_subnet | default(test_address.subnet))
   changed_when: true
   failed_when: false
   no_log: true
