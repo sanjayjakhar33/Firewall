@@ -62,11 +62,11 @@
       ansible.builtin.assert:
         that:
           - source_interface.status == 200
-          - (source_interface.json.results | default({})).name == test_policy.srcintf
+          - (source_interface.json.results | default([]) | first | default({})).name == test_policy.srcintf
           - destination_interface.status == 200
-          - (destination_interface.json.results | default({})).name == test_policy.dstintf
+          - (destination_interface.json.results | default([]) | first | default({})).name == test_policy.dstintf
           - destination_address.status == 200
-          - (destination_address.json.results | default({})).name == test_policy.dstaddr
+          - (destination_address.json.results | default([]) | first | default({})).name == test_policy.dstaddr
         fail_msg: "Required policy interface or destination object is missing; no writes were attempted."
 
     - name: Validate policy ID is free or belongs to this test policy
@@ -75,6 +75,6 @@
           - >-
             policy_fact.status == 404
             or
-            ((policy_fact.json.results | default({})).policyid | int == test_policy.policyid | int
-            and (policy_fact.json.results | default({})).name == test_policy.name)
+            ((policy_fact.json.results | default([]) | first | default({})).policyid | int == test_policy.policyid | int
+            and (policy_fact.json.results | default([]) | first | default({})).name == test_policy.name)
         fail_msg: "Policy ID is already used by an unrelated policy; choose another lab policy ID."
