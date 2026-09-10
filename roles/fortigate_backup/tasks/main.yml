@@ -1,8 +1,8 @@
 ---
 - name: Retrieve current FortiGate configuration backup
   ansible.builtin.uri:
-    url: "{{ fortigate_api_base }}/monitor/system/config/backup?scope=vdom-config&vdom={{ fortigate_vdom | urlencode }}&file_format=json&password_mask=true"
-    method: GET
+    url: "{{ fortigate_api_base }}/monitor/system/config/backup?scope=global&vdom={{ fortigate_vdom | urlencode }}"
+    method: POST
     headers:
       Authorization: "Bearer {{ fortigate_api_token }}"
     validate_certs: "{{ fortigate_validate_certs }}"
@@ -31,8 +31,8 @@
 
 - name: Write timestamped local backup
   ansible.builtin.copy:
-    content: "{{ fortigate_backup.json | default(fortigate_backup.content) | to_nice_json }}"
-    dest: "{{ backup_directory }}/fortigate_lab_{{ lookup('pipe', 'date +%Y-%m-%d_%H%M%S') }}.json"
+    content: "{{ fortigate_backup.content }}"
+    dest: "{{ backup_directory }}/fortigate_lab_{{ lookup('pipe', 'date +%Y-%m-%d_%H%M%S') }}.conf"
     mode: '0600'
   delegate_to: localhost
   no_log: true
