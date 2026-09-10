@@ -47,7 +47,7 @@
       - service_fact.status == 200
       - (service_fact.json.results | default([]) | first | default({})).name == test_service.name
       - (service_fact.json.results | default([]) | first | default({})).protocol == test_service.protocol
-      - (service_fact.json.results | default([]) | first | default({})).tcp_portrange == verify_service_port
+      - (service_fact.json.results | default([]) | first | default({}))['tcp-portrange'] == verify_service_port
       - policy_fact.status == 200
       - (policy_fact.json.results | default([]) | first | default({})).policyid | int == test_policy.policyid | int
       - (policy_fact.json.results | default([]) | first | default({})).name == test_policy.name
